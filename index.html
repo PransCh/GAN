@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Upload Photo</title>
+    <script>
+      function handleFormSubmit(event) {
+        event.preventDefault();
+
+        var fileInput = document.getElementById("file");
+        var file = fileInput.files[0];
+
+        var formData = new FormData();
+        formData.append("file", file);
+
+        fetch("http://localhost:8000/home", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            // Process the predictions
+            let rgbData = data.predictions[0];
+            console.log(data.predictions);
+            console.log(rgbData);
+
+            // Create an image element
+            var img = new Image();
+
+            // Convert RGB data to a data URL
+            var canvas = document.createElement("canvas");
+            var ctx = canvas.getContext("2d");
+            canvas.width = rgbData[0].length;
+            canvas.height = rgbData.length;
+
+            var imageData = ctx.createImageData(canvas.width, canvas.height);
+            var data = imageData.data;
+
+            for (var y = 0; y < rgbData.length; y++) {
+              for (var x = 0; x < rgbData[y].length; x++) {
+                var color = rgbData[y][x];
+                var dataIndex = (y * canvas.width + x) * 4;
+
+                data[dataIndex] = color[0];
+                data[dataIndex + 1] = color[1];
+                data[dataIndex + 2] = color[2];
+                data[dataIndex + 3] = 255;
+              }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            img.onload = function () {
+              // Append the image element to the document body or any desired container
+              document.body.appendChild(img);
+            };
+
+            img.src = canvas.toDataURL();
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Upload Photo</h1>
+    <form
+      action="http://localhost:8000/home"
+      method="post"
+      enctype="multipart/form-data"
+      onsubmit="handleFormSubmit(event)"
+    >
+      <input type="file" name="file" id="file" />
+      <input type="submit" value="Upload" />
+    </form>
+  </body>
+</html>
